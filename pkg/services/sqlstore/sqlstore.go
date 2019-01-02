@@ -221,6 +221,10 @@ func (ss *SqlStore) buildConnectionString() (string, error) {
 			mysql.RegisterTLSConfig("custom", tlsCert)
 			cnnstr += "&tls=custom"
 		}
+
+		if ss.dbCfg.ExtraConnectionStringArgs != "" {
+			cnnstr += "&" + ss.dbCfg.ExtraConnectionStringArgs
+		}
 	case migrator.POSTGRES:
 		var host, port = "127.0.0.1", "5432"
 		fields := strings.Split(ss.dbCfg.Host, ":")
@@ -237,6 +241,9 @@ func (ss *SqlStore) buildConnectionString() (string, error) {
 			ss.dbCfg.User = "''"
 		}
 		cnnstr = fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=%s sslcert=%s sslkey=%s sslrootcert=%s", ss.dbCfg.User, ss.dbCfg.Pwd, host, port, ss.dbCfg.Name, ss.dbCfg.SslMode, ss.dbCfg.ClientCertPath, ss.dbCfg.ClientKeyPath, ss.dbCfg.CaCertPath)
+		if ss.dbCfg.ExtraConnectionStringArgs != "" {
+			cnnstr += " " + ss.dbCfg.ExtraConnectionStringArgs
+		}
 	case migrator.SQLITE:
 		// special case for tests
 		if !filepath.IsAbs(ss.dbCfg.Path) {
@@ -244,6 +251,9 @@ func (ss *SqlStore) buildConnectionString() (string, error) {
 		}
 		os.MkdirAll(path.Dir(ss.dbCfg.Path), os.ModePerm)
 		cnnstr = "file:" + ss.dbCfg.Path + "?cache=shared&mode=rwc"
+		if ss.dbCfg.ExtraConnectionStringArgs != "" {
+			cnnstr += "&" + ss.dbCfg.ExtraConnectionStringArgs
+		}
 	default:
 		return "", fmt.Errorf("Unknown database type: %s", ss.dbCfg.Type)
 	}
@@ -319,6 +329,7 @@ func (ss *SqlStore) readConfig() {
 	ss.dbCfg.ClientCertPath = sec.Key("client_cert_path").String()
 	ss.dbCfg.ServerCertName = sec.Key("server_cert_name").String()
 	ss.dbCfg.Path = sec.Key("path").MustString("data/grafana.db")
+	ss.dbCfg.ExtraConnectionStringArgs = sec.Key("extra_connection_string_args").String()
 }
 
 func InitTestDB(t *testing.T) *SqlStore {
@@ -400,4 +411,5 @@ type DatabaseConfig struct {
 	MaxOpenConn                                int
 	MaxIdleConn                                int
 	ConnMaxLifetime                            int
+	ExtraConnectionStringArgs                  string
 }
