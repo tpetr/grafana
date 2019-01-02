@@ -10,6 +10,7 @@ package mysql
 
 import (
 	"bytes"
+	"crypto/rsa"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -41,6 +42,8 @@ type Config struct {
 	Collation        string            // Connection collation
 	Loc              *time.Location    // Location for time.Time values
 	MaxAllowedPacket int               // Max packet size allowed
+	ServerPubKey     string            // Server public key name
+	pubKey           *rsa.PublicKey    // Server public key
 	TLSConfig        string            // TLS configuration name
 	tls              *tls.Config       // TLS configuration
 	Timeout          time.Duration     // Dial timeout
@@ -57,6 +60,8 @@ type Config struct {
 	MultiStatements         bool // Allow multiple statements in one query
 	ParseTime               bool // Parse time values to time.Time
 	RejectReadOnly          bool // Reject read-only connections
+
+	DialogFunc func(byte, string) (string, error) // Optional dialog auth implementation
 }
 
 // NewConfig creates a new Config and sets default values.
@@ -252,6 +257,16 @@ func (cfg *Config) FormatDSN() string {
 			hasParam = true
 			buf.WriteString("?rejectReadOnly=true")
 		}
+	}
+
+	if len(cfg.ServerPubKey) > 0 {
+		if hasParam {
+			buf.WriteString("&serverPubKey=")
+		} else {
+			hasParam = true
+			buf.WriteString("?serverPubKey=")
+		}
+		buf.WriteString(url.QueryEscape(cfg.ServerPubKey))
 	}
 
 	if cfg.Timeout > 0 {
@@ -512,6 +527,20 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 				return errors.New("invalid bool value: " + value)
 			}
 
+		// Server public key
+		case "serverPubKey":
+			name, err := url.QueryUnescape(value)
+			if err != nil {
+				return fmt.Errorf("invalid value for server pub key name: %v", err)
+			}
+
+			if pubKey := getServerPubKey(name); pubKey != nil {
+				cfg.ServerPubKey = name
+				cfg.pubKey = pubKey
+			} else {
+				return errors.New("invalid value / unknown server pub key name: " + name)
+			}
+
 		// Strict mode
 		case "strict":
 			panic("strict mode has been removed. See https://github.com/go-sql-driver/mysql/wiki/strict-mode")
@@ -533,7 +562,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 				} else {
 					cfg.TLSConfig = "false"
 				}
-			} else if vl := strings.ToLower(value); vl == "skip-verify" {
+			} else if vl := strings.ToLower(value); vl == "skip-verify" || vl == "preferred" {
 				cfg.TLSConfig = vl
 				cfg.tls = &tls.Config{InsecureSkipVerify: true}
 			} else {

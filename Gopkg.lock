@@ -220,11 +220,12 @@
   revision = "068d408f9c54c7fa7fcc5e2bdd3241ab21280c9e"
 
 [[projects]]
-  digest = "1:fddd4bada6100d6fc49a9f32f18ba5718db45a58e4b00aa6377e1cfbf06af34f"
+  digest = "1:53ffbac6a9f5c4d253e9bf3876aeff03ad6616546e5113ae641339943dd1a56c"
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "2cc627ac8defc45d65066ae98f898166f580f9a4"
+  revision = "62393613baaf866c56b85a89c37db1c11cf9a332"
+  source = "https://github.com/tpetr/mysql.git"
 
 [[projects]]
   digest = "1:a1efdbc2762667c8a41cbf02b19a0549c846bf2c1d08cad4f445e3344089f1f0"
