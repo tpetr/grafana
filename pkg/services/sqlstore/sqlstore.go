@@ -210,12 +210,8 @@ func (ss *SqlStore) buildConnectionString() (string, error) {
 			protocol = "unix"
 		}
 
-		cnnstr = fmt.Sprintf("%s:%s@%s(%s)/%s?collation=utf8mb4_unicode_ci&allowNativePasswords=true",
+		cnnstr = fmt.Sprintf("%s:%s@%s(%s)/%s?collation=utf8mb4_unicode_ci&allowNativePasswords=true&allowCleartextPassword=true",
 			ss.dbCfg.User, ss.dbCfg.Pwd, protocol, ss.dbCfg.Host, ss.dbCfg.Name)
-
-		if ss.dbCfg.AllowCleartextPassword {
-			cnnstr += "&allowCleartextPassword=1"
-		}
 
 		if ss.dbCfg.SslMode == "true" || ss.dbCfg.SslMode == "skip-verify" {
 			tlsCert, err := makeCert("custom", ss.dbCfg)
@@ -323,7 +319,6 @@ func (ss *SqlStore) readConfig() {
 	ss.dbCfg.ClientCertPath = sec.Key("client_cert_path").String()
 	ss.dbCfg.ServerCertName = sec.Key("server_cert_name").String()
 	ss.dbCfg.Path = sec.Key("path").MustString("data/grafana.db")
-	ss.dbCfg.AllowCleartextPassword = sec.Key("allow_cleartext_password").MustBool(false)
 }
 
 func InitTestDB(t *testing.T) *SqlStore {
@@ -405,5 +400,4 @@ type DatabaseConfig struct {
 	MaxOpenConn                                int
 	MaxIdleConn                                int
 	ConnMaxLifetime                            int
-	AllowCleartextPassword					   bool
 }
