@@ -11,28 +11,28 @@ import (
 )
 
 type CertReloader struct {
-	mu       sync.Mutex
+	mu       sync.RWMutex
 	certFile string
 	keyFile  string
 	cert     *tls.Certificate
 }
 
 func (c *CertReloader) Reload() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	cert, err := tls.LoadX509KeyPair(c.certFile, c.keyFile)
 	if err != nil {
 		return err
 	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	c.cert = &cert
 	return nil
 }
 
 func (c *CertReloader) GetCertificate() *tls.Certificate {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.cert
 }
 
