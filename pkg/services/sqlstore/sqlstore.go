@@ -231,7 +231,7 @@ func (ss *SqlStore) buildConnectionString() (string, error) {
 			ss.dbCfg.User, ss.dbCfg.Pwd, protocol, ss.dbCfg.Host, ss.dbCfg.Name)
 
 		if ss.dbCfg.SslMode == "true" || ss.dbCfg.SslMode == "skip-verify" {
-			tlsCert, err := makeCert("custom", ss.dbCfg)
+			tlsCert, err := makeCert(ss.dbCfg)
 			if err != nil {
 				return "", err
 			}
@@ -340,6 +340,7 @@ func (ss *SqlStore) readConfig() {
 	ss.dbCfg.CaCertPath = sec.Key("ca_cert_path").String()
 	ss.dbCfg.ClientKeyPath = sec.Key("client_key_path").String()
 	ss.dbCfg.ClientCertPath = sec.Key("client_cert_path").String()
+	ss.dbCfg.ClientCertRefreshInterval = sec.Key("client_cert_refresh_interval").MustDuration(0)
 	ss.dbCfg.ServerCertName = sec.Key("server_cert_name").String()
 	ss.dbCfg.Path = sec.Key("path").MustString("data/grafana.db")
 
@@ -416,21 +417,22 @@ func IsTestDbPostgres() bool {
 }
 
 type DatabaseConfig struct {
-	Type             string
-	Host             string
-	Name             string
-	User             string
-	Pwd              string
-	Path             string
-	SslMode          string
-	CaCertPath       string
-	ClientKeyPath    string
-	ClientCertPath   string
-	ServerCertName   string
-	ConnectionString string
-	MaxOpenConn      int
-	MaxIdleConn      int
-	ConnMaxLifetime  int
-	CacheMode        string
-	UrlQueryParams   map[string][]string
+	Type                      string
+	Host                      string
+	Name                      string
+	User                      string
+	Pwd                       string
+	Path                      string
+	SslMode                   string
+	CaCertPath                string
+	ClientKeyPath             string
+	ClientCertPath            string
+	ClientCertRefreshInterval time.Duration
+	ServerCertName            string
+	ConnectionString          string
+	MaxOpenConn               int
+	MaxIdleConn               int
+	ConnMaxLifetime           int
+	CacheMode                 string
+	UrlQueryParams            map[string][]string
 }
